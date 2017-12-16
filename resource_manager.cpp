@@ -12,13 +12,13 @@
 using namespace std;
 int n,m,k;
 
-struct Op{
+struct Op{//class for instructions
 	int instr, r, num;
 	Op(int w, int y, int z): instr(w), r(y), num(z){
 	};
 };
 
-struct Task{
+struct Task{//class for each task
 	vector<int> resource, max_r;
 	bool finished = false;
 	int wait_t = 0;
@@ -26,31 +26,31 @@ struct Task{
 	int state = 0;
 	bool operated;
 	deque<Op> ops;
-	Task(){
+	Task(){//assign each task m resourses
 		resource.assign(m+1, 0);
 		max_r.assign(m+1, 0);
 	}
 };
 
 
-void optimistic(vector<Task> tasks, vector<int> resources){
+void optimistic(vector<Task> tasks, vector<int> resources){//optimistic manager
 	int count = 0;
 	int cycle = 0;
 	vector<int> pending;
 	pending.assign(m+1, 0);
 	vector<int> blocked_queue;
-	while (count < n) {
+	while (count < n) {//n finished tasks
 		
 		for (int i=1; i<=m; i++) resources[i]+=pending[i];
 		
-		pending.assign(m+1, 0);
+		pending.assign(m+1, 0);//clear pending resources
 		bool flag = false;
 		//cout<<cycle << endl;
 		
 		for (int i=1; i<=n; i++) tasks[i].operated = false;
 		
 		
-		for (int j=0; j<blocked_queue.size();j++) {
+		for (int j=0; j<blocked_queue.size();j++) {//check blocked tasks
 			int i = blocked_queue[j];
 			if (tasks[i].state == aborted){
 				blocked_queue.erase(blocked_queue.begin()+j);
@@ -72,17 +72,17 @@ void optimistic(vector<Task> tasks, vector<int> resources){
 			}
 		}
 		
-		for (int i=1; i<=n; i++){
+		for (int i=1; i<=n; i++){//process unblocked tasks
 			if (!tasks[i].finished) {
 				if (tasks[i].state != blocked && !tasks[i].operated) {
 					Op temp = tasks[i].ops.front();
 					//cout << i << " " << temp.instr << " " <<temp.r << " " <<temp.num << endl;
-					if (temp.instr == initiate) {
+					if (temp.instr == initiate) {//initiate instruction
 						tasks[i].max_r[temp.r] = temp.num;
 						tasks[i].ops.pop_front();
 						flag = true;
 					}
-					else if (temp.instr == terminate) {
+					else if (temp.instr == terminate) {//terminate instruction
 						tasks[i].terminate_t = cycle;
 						tasks[i].finished = true;
 						count++;
@@ -93,20 +93,20 @@ void optimistic(vector<Task> tasks, vector<int> resources){
 						} 
 						flag = true;
 					}
-					else if (temp.instr == release) {
+					else if (temp.instr == release) {//release instruction
 						tasks[i].resource[temp.r] -= temp.num;
 						pending[temp.r] += temp.num;
 						tasks[i].ops.pop_front();
 						flag = true;
 					}
-					else if (temp.instr == compute) {
+					else if (temp.instr == compute) {//comput instruction
 						tasks[i].ops[0].r--;
 						if (tasks[i].ops[0].r == 0) {
 							tasks[i].ops.pop_front();
 						}
 						flag = true;
 					}
-					else if (temp.instr == request){
+					else if (temp.instr == request){//request instruction
 						if (resources[temp.r] >= temp.num) {
 							tasks[i].resource[temp.r] += temp.num;
 							resources[temp.r] -= temp.num;
@@ -126,7 +126,7 @@ void optimistic(vector<Task> tasks, vector<int> resources){
 			}
 		}
 		
-		if (!flag) {
+		if (!flag) {//check deadlock (flag==flase) means deadlocked
 			for (int i=1; i<=n; i++) {
 				if (tasks[i].state == blocked) {
 					Op temp = tasks[i].ops.front();
@@ -145,7 +145,7 @@ void optimistic(vector<Task> tasks, vector<int> resources){
 		}
 		cycle++;
 	}
-	cout << "FIFO" << endl;
+	cout << "FIFO" << endl;//outputs
 	int tot_t=0, tot_wt=0;
 	for (int i=1; i<=n; i++) {
 		if (tasks[i].state!=aborted){
@@ -161,16 +161,16 @@ void optimistic(vector<Task> tasks, vector<int> resources){
 	cout << endl; 
 }
 
-bool banker_check(vector<Task> tasks, vector<int> resources, int x, int r, int num) {
+bool banker_check(vector<Task> tasks, vector<int> resources, int x, int r, int num) {//banker algorithm
 	if (resources[r] < num) return false;
 	bool flag = true;
 	int count = 0;
 	tasks[x].resource[r] += num;
 	resources[r] -= num;
-	for (int i=1; i<=n; i++) {
+	for (int i=1; i<=n; i++) {//check states
 		if (tasks[i].finished || tasks[i].state == aborted) count++;
 	}
-	while (count < n && flag) {
+	while (count < n && flag) {//check finished or impossible
 		flag = false;
 		/*for (int q=1; q<=m; q++) {
 			cout << resources[q] << " ";
@@ -180,7 +180,7 @@ bool banker_check(vector<Task> tasks, vector<int> resources, int x, int r, int n
 			cout << endl;
 		}*/
 		
-		for (int i=1; i<=n; i++) {
+		for (int i=1; i<=n; i++) {//check safe state
 			//cout << "check " << i << endl;
 			if (!tasks[i].finished && !(tasks[i].state == aborted)){
 				bool enough = true;
@@ -205,14 +205,14 @@ bool banker_check(vector<Task> tasks, vector<int> resources, int x, int r, int n
 	return flag;
 }
 
-void banker(vector<Task> tasks, vector<int> resources) {
+void banker(vector<Task> tasks, vector<int> resources) {//banker manager
 	int count = 0;
 	int cycle = 0;
 	vector<int> pending;
 	pending.assign(m+1, 0);
 	vector<int> blocked_queue;
 	vector<int> init_resources = resources;
-	while (count < n) {
+	while (count < n) {//while not finished
 		
 		for (int i=1; i<=m; i++) resources[i]+=pending[i];
 		
@@ -223,7 +223,7 @@ void banker(vector<Task> tasks, vector<int> resources) {
 		for (int i=1; i<=n; i++) tasks[i].operated = false;
 		
 		
-		for (int j=0; j<blocked_queue.size();j++) {
+		for (int j=0; j<blocked_queue.size();j++) {//check block
 			int i = blocked_queue[j];
 			//cout << "blocked check " << i << endl;
 			Op temp = tasks[i].ops.front();
@@ -239,7 +239,7 @@ void banker(vector<Task> tasks, vector<int> resources) {
 			}
 		}
 		
-		for (int i=1; i<=n; i++){
+		for (int i=1; i<=n; i++){//proceed each not finished process
 			if (!tasks[i].finished) {
 				if (tasks[i].state != blocked && !tasks[i].operated) {
 					Op temp = tasks[i].ops.front();
@@ -317,7 +317,7 @@ void banker(vector<Task> tasks, vector<int> resources) {
 			}
 		}
 		
-		if (!flag) {
+		if (!flag) {//deadlock checking(unnecessary)
 			for (int i=1; i<=n; i++) {
 				if (tasks[i].state == blocked) {
 					Op temp = tasks[i].ops.front();
@@ -337,7 +337,7 @@ void banker(vector<Task> tasks, vector<int> resources) {
 		cycle++;
 	}
 	
-	cout << "Banker's" << endl;
+	cout << "Banker's" << endl;//outputs
 	int tot_t=0, tot_wt=0;
 	for (int i=1; i<=n; i++) {
 		if (tasks[i].state!=aborted){
@@ -353,7 +353,7 @@ void banker(vector<Task> tasks, vector<int> resources) {
 }
 
 int main(int argc, char** argv){
-	ifstream input(argv[1]);
+	ifstream input(argv[1]);//inputs
 	vector<Task> tasks;
 	vector<int> resources;
 	input >> n >> m;
@@ -384,6 +384,6 @@ int main(int argc, char** argv){
 		}
 	}
 	
-	optimistic(tasks, resources);
-	banker(tasks, resources);
+	optimistic(tasks, resources);//simulate optimistic
+	banker(tasks, resources);//simulate banker
 }
